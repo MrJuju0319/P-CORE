@@ -27,35 +27,41 @@ public class PcorePlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        PcoreConfiguration config = PcoreConfiguration.from(getConfig());
 
-        validate(config);
+        try {
+            PcoreConfiguration config = PcoreConfiguration.from(getConfig());
+            validate(config);
 
-        this.ioExecutor = Executors.newFixedThreadPool(Math.max(4, config.db().poolSize()));
-        this.scheduler = Executors.newSingleThreadScheduledExecutor();
-        this.dbService = new DbServiceImpl(config.db(), ioExecutor);
-        this.redisService = new RedisServiceImpl("pcore", config.redis());
+            this.ioExecutor = Executors.newFixedThreadPool(Math.max(4, config.db().poolSize()));
+            this.scheduler = Executors.newSingleThreadScheduledExecutor();
+            this.dbService = new DbServiceImpl(config.db(), ioExecutor);
+            this.redisService = new RedisServiceImpl("pcore", config.redis());
 
-        SecurityServiceImpl security = new SecurityServiceImpl(config);
-        IdentityServiceImpl identity = new IdentityServiceImpl(config, redisService);
-        ConfigServiceImpl configService = new ConfigServiceImpl(getConfig(), config);
+            SecurityServiceImpl security = new SecurityServiceImpl(config);
+            IdentityServiceImpl identity = new IdentityServiceImpl(config, redisService);
+            ConfigServiceImpl configService = new ConfigServiceImpl(getConfig(), config);
 
-        PcoreApi api = new PcoreApiImpl(dbService, redisService, identity, security, configService);
-        Bukkit.getServicesManager().register(PcoreApi.class, api, this, ServicePriority.Highest);
+            PcoreApi api = new PcoreApiImpl(dbService, redisService, identity, security, configService);
+            Bukkit.getServicesManager().register(PcoreApi.class, api, this, ServicePriority.Highest);
 
-        if (config.presenceEnabled()) {
-            scheduler.scheduleAtFixedRate(
-                    () -> identity.heartbeat().exceptionally(ex -> {
-                        getLogger().warning("Heartbeat failed: " + ex.getMessage());
-                        return null;
-                    }),
-                    0,
-                    config.heartbeatInterval().toSeconds(),
-                    TimeUnit.SECONDS
-            );
+            if (config.presenceEnabled()) {
+                scheduler.scheduleAtFixedRate(
+                        () -> identity.heartbeat().exceptionally(ex -> {
+                            getLogger().warning("Heartbeat failed: " + ex.getMessage());
+                            return null;
+                        }),
+                        0,
+                        config.heartbeatInterval().toSeconds(),
+                        TimeUnit.SECONDS
+                );
+            }
+
+            getLogger().info("p-core enabled with serverId=" + config.identity().serverId());
+        } catch (Exception exception) {
+            getLogger().severe("Failed to initialize p-core: " + exception.getMessage());
+            exception.printStackTrace();
+            getServer().getPluginManager().disablePlugin(this);
         }
-
-        getLogger().info("p-core enabled with serverId=" + config.identity().serverId());
     }
 
     @Override

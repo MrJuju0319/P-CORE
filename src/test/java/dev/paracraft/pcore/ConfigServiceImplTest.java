@@ -20,7 +20,7 @@ class ConfigServiceImplTest {
         PcoreConfiguration cfg = new PcoreConfiguration(
                 new PcoreConfiguration.Identity("srv", "group", Set.of()),
                 new PcoreConfiguration.Security("secret", Set.of()),
-                new PcoreConfiguration.Db("localhost", 3306, "db", "u", "p", 10,
+                new PcoreConfiguration.Db("localhost", 3306, "db", "u", "p", 10, 2,
                         Duration.ofSeconds(3), Duration.ofSeconds(60), Duration.ofSeconds(120)),
                 new PcoreConfiguration.Redis("localhost", 6379, "", false, 1000, 0),
                 Map.of("p-2FA", "p2fa"),

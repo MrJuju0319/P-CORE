@@ -40,6 +40,7 @@ public record PcoreConfiguration(
                 cfg.getString("db.user", "root"),
                 cfg.getString("db.password", ""),
                 cfg.getInt("db.poolSize", 10),
+                cfg.getInt("db.minIdle", 2),
                 Duration.ofMillis(cfg.getLong("db.connectionTimeoutMs", 3000)),
                 Duration.ofMillis(cfg.getLong("db.idleTimeoutMs", 60000)),
                 Duration.ofMillis(cfg.getLong("db.maxLifetimeMs", 1800000))
@@ -81,7 +82,7 @@ public record PcoreConfiguration(
     }
 
     public record Db(String host, int port, String database, String user, String password,
-                     int poolSize, Duration connectionTimeout, Duration idleTimeout, Duration maxLifetime) {
+                     int poolSize, int minIdle, Duration connectionTimeout, Duration idleTimeout, Duration maxLifetime) {
     }
 
     public record Redis(String host, int port, String password, boolean ssl, long timeoutMs, int dbIndex) {

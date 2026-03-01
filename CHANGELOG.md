@@ -18,3 +18,13 @@
 ### Changed
 - Expanded README with a detailed API integration guide for client plugins: managed/standalone bootstrap, async/Folia rules, and concrete usage examples for DbService, RedisService, IdentityService, SecurityService, and ConfigService.
 - Extended README operational content with additional configuration guidance, variable explanations, and migration best practices for plugin developers.
+
+## [0.1.2] - 2026-03-01
+### Fixed
+- Fixed MariaDB driver bootstrap by explicitly setting/loading `org.mariadb.jdbc.Driver` before creating the Hikari datasource.
+- Improved plugin startup robustness: initialization errors are logged clearly and plugin is disabled cleanly instead of hard-crashing startup flow.
+- Added `db.minIdle` configuration to prevent fixed-size pool warning and make `idleTimeout` effective when desired.
+
+### Changed
+- Enabled shaded release packaging (dependencies embedded) and relocated internal Hikari/Lettuce classes to reduce inter-plugin classpath conflicts.
+- Expanded README with troubleshooting steps for `No suitable driver` and Hikari fixed-size warning, plus updated build/config guidance.

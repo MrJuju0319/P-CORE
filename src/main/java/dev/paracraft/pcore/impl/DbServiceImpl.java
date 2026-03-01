@@ -27,13 +27,23 @@ public class DbServiceImpl implements DbService, AutoCloseable {
     public DbServiceImpl(PcoreConfiguration.Db db, ExecutorService executor) {
         HikariConfig hikari = new HikariConfig();
         hikari.setJdbcUrl("jdbc:mariadb://" + db.host() + ":" + db.port() + "/" + db.database());
+        hikari.setDriverClassName("org.mariadb.jdbc.Driver");
         hikari.setUsername(db.user());
         hikari.setPassword(db.password());
         hikari.setMaximumPoolSize(db.poolSize());
+        hikari.setMinimumIdle(Math.max(0, Math.min(db.minIdle(), db.poolSize())));
         hikari.setConnectionTimeout(db.connectionTimeout().toMillis());
         hikari.setIdleTimeout(db.idleTimeout().toMillis());
         hikari.setMaxLifetime(db.maxLifetime().toMillis());
         hikari.setPoolName("p-core-mariadb");
+        hikari.setInitializationFailTimeout(5000L);
+
+        try {
+            Class.forName("org.mariadb.jdbc.Driver");
+        } catch (ClassNotFoundException exception) {
+            throw new IllegalStateException("MariaDB JDBC driver not found in plugin classpath. Ensure shaded jar is used.", exception);
+        }
+
         this.dataSource = new HikariDataSource(hikari);
         this.executor = executor;
     }

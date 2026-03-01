@@ -29,7 +29,7 @@ Il centralise l'accès MariaDB + Redis et expose une API interne commune pour le
 mvn clean package
 ```
 
-Le jar final est généré dans `target/p-core-0.1.0-SNAPSHOT.jar`.
+Le jar final (avec dépendances embarquées via shade) est généré dans `target/p-core-0.1.0-SNAPSHOT.jar` (`original-...jar` = non-shadé).
 
 ## Déploiement
 
@@ -105,6 +105,7 @@ plugins:
 - `security.allowedPlugins`: liste blanche de plugins autorisés.
 - `db.host|port|database|user|password`: credentials MariaDB.
 - `db.poolSize`: taille maximale du pool Hikari unique.
+- `db.minIdle`: connexions minimales conservées par le pool (évite le mode fixed-size si `< poolSize`).
 - `db.connectionTimeoutMs|idleTimeoutMs|maxLifetimeMs`: tuning pool/timeouts.
 - `redis.host|port|password|ssl|timeoutMs|dbIndex`: connexion Redis.
 - `namespaces`: mapping `pluginId -> préfixe logique`.
@@ -118,6 +119,28 @@ plugins:
 - En environnement multi-serveurs, normaliser `group` et `tags` pour filtrer facilement les instances vivantes.
 
 ---
+
+
+
+## Dépannage (erreurs courantes)
+
+### `No suitable driver` au démarrage
+
+Si vous voyez `java.sql.SQLException: No suitable driver`:
+
+1. Vérifiez que vous déployez bien le jar `target/p-core-0.1.0-SNAPSHOT.jar` (et pas `original-...jar`).
+2. Vérifiez que `db.host`, `db.port`, `db.database` sont corrects.
+3. Vérifiez que le serveur peut joindre MariaDB (firewall/réseau).
+
+`p-core` charge explicitement le driver `org.mariadb.jdbc.Driver` et embarque les dépendances nécessaires dans le jar de release.
+
+### Warning Hikari `idleTimeout has no effect because the pool is operating as a fixed size pool`
+
+Ce warning apparaît si `minIdle == poolSize`.
+
+- Réglez `db.minIdle` avec une valeur **inférieure** à `db.poolSize` (ex: `minIdle: 2`, `poolSize: 10`).
+- Sinon, c’est informatif uniquement, mais `idleTimeout` ne sera pas appliqué.
+
 
 ## API interne côté plugins clients (détaillée)
 
