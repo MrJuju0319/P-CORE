@@ -222,6 +222,11 @@ api.db().query(
 });
 ```
 
+Compatibilité:
+
+- `Row` est manipulable directement (`row.get("col")`, `row.columns()`).
+- `Row` implémente aussi `Map<String, Object>` pour compatibilité avec des plugins existants qui castent encore le résultat en `Map`.
+
 ### Transaction
 
 ```java

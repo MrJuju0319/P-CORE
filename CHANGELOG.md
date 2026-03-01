@@ -28,3 +28,10 @@
 ### Changed
 - Enabled shaded release packaging (dependencies embedded) and relocated internal Hikari/Lettuce classes to reduce inter-plugin classpath conflicts.
 - Expanded README with troubleshooting steps for `No suitable driver` and Hikari fixed-size warning, plus updated build/config guidance.
+
+## [0.1.3] - 2026-03-01
+### Fixed
+- Fixed `ClassCastException` for downstream plugins casting DB query rows to `Map<String, Object>` by making `Row` implement `Map` semantics (extends `HashMap`) while preserving the p-core API contract.
+
+### Changed
+- Updated README DB API section with explicit row compatibility notes (`Row` + `Map`).
