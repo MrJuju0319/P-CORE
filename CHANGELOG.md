@@ -35,3 +35,8 @@
 
 ### Changed
 - Updated README DB API section with explicit row compatibility notes (`Row` + `Map`).
+
+## [0.1.4] - 2026-03-01
+### Changed
+- Removed `server.identity.group` and `server.identity.tags` from the default `config.yml` example as requested; they remain optional and supported by the code with defaults.
+- Updated README configuration sample and variable descriptions to reflect optional `group/tags`.

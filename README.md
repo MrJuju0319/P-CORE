@@ -51,8 +51,6 @@ Le jar final (avec dépendances embarquées via shade) est généré dans `targe
 server:
   identity:
     serverId: "survival-01"
-    group: "survival"
-    tags: ["eu-west", "lobby"]
   presence:
     enabled: true
     heartbeatIntervalSeconds: 5
@@ -96,8 +94,8 @@ plugins:
 ### Variables principales
 
 - `server.identity.serverId`: identifiant stable du serveur (ex: `survival-01`).
-- `server.identity.group`: groupe logique (`survival`, `minigames`, ...).
-- `server.identity.tags`: tags libres (`eu-west`, `event`, ...).
+- `server.identity.group`: groupe logique (optionnel, défaut `default`).
+- `server.identity.tags`: tags libres (optionnel, défaut `[]`).
 - `server.presence.enabled`: active heartbeat Redis.
 - `server.presence.heartbeatIntervalSeconds`: fréquence heartbeat.
 - `server.presence.ttlSeconds`: durée de vie d’un heartbeat côté Redis.

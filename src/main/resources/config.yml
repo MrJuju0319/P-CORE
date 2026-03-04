@@ -1,8 +1,6 @@
 server:
   identity:
     serverId: "survival-01"
-    group: "survival"
-    tags: ["eu-west", "lobby"]
   presence:
     enabled: true
     heartbeatIntervalSeconds: 5
