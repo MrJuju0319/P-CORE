@@ -1,0 +1,45 @@
+server:
+  identity:
+    serverId: "survival-01"
+  presence:
+    enabled: true
+    heartbeatIntervalSeconds: 5
+    ttlSeconds: 15
+
+security:
+  sharedSecret: "CHANGE_ME_SUPER_SECRET"
+  allowedPlugins: ["p-2FA", "p-fly", "p-tp", "p-voteparty"]
+
+db:
+  host: "127.0.0.1"
+  port: 3306
+  database: "minecraft"
+  user: "root"
+  password: "password"
+  poolSize: 10
+  minIdle: 2
+  connectionTimeoutMs: 3000
+  idleTimeoutMs: 60000
+  maxLifetimeMs: 1800000
+
+redis:
+  host: "127.0.0.1"
+  port: 6379
+  password: ""
+  ssl: false
+  timeoutMs: 1000
+  dbIndex: 0
+
+namespaces:
+  p-2FA: "p2fa"
+  p-fly: "pfly"
+  p-tp: "ptp"
+  p-voteparty: "pvoteparty"
+
+plugins:
+  p-2FA:
+    tablePrefix: "p2fa_"
+    cachePrefix: "pcore:p-2FA"
+  p-fly:
+    tablePrefix: "pfly_"
+    cachePrefix: "pcore:p-fly"
