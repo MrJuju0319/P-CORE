@@ -50,7 +50,7 @@ public class SecurityServiceImpl implements SecurityService {
         }
 
         String expected = sign(pluginId, payload, timestamp, nonce);
-        return expected.equals(signature);
+        return constantTimeEquals(expected, signature);
     }
 
     @Override
@@ -74,5 +74,24 @@ public class SecurityServiceImpl implements SecurityService {
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to create HMAC", exception);
         }
+    }
+
+    /**
+     * Prevent timing attacks on signature comparison.
+     */
+    private boolean constantTimeEquals(String a, String b) {
+        if (a == null || b == null) {
+            return false;
+        }
+        byte[] x = a.getBytes(StandardCharsets.UTF_8);
+        byte[] y = b.getBytes(StandardCharsets.UTF_8);
+        if (x.length != y.length) {
+            return false;
+        }
+        int diff = 0;
+        for (int i = 0; i < x.length; i++) {
+            diff |= x[i] ^ y[i];
+        }
+        return diff == 0;
     }
 }
