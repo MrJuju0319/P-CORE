@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -25,6 +26,9 @@ public class DbServiceImpl implements DbService, AutoCloseable {
     private final ExecutorService executor;
 
     public DbServiceImpl(PcoreConfiguration.Db db, ExecutorService executor) {
+        this.executor = Objects.requireNonNull(executor, "executor");
+        Objects.requireNonNull(db, "db");
+
         HikariConfig hikari = new HikariConfig();
         hikari.setJdbcUrl("jdbc:mariadb://" + db.host() + ":" + db.port() + "/" + db.database());
         hikari.setDriverClassName("org.mariadb.jdbc.Driver");
@@ -38,6 +42,7 @@ public class DbServiceImpl implements DbService, AutoCloseable {
         hikari.setPoolName("p-core-mariadb");
         hikari.setInitializationFailTimeout(5000L);
 
+        // Ensure the driver is available in the shaded jar.
         try {
             Class.forName("org.mariadb.jdbc.Driver");
         } catch (ClassNotFoundException exception) {
@@ -45,7 +50,6 @@ public class DbServiceImpl implements DbService, AutoCloseable {
         }
 
         this.dataSource = new HikariDataSource(hikari);
-        this.executor = executor;
     }
 
     @Override
@@ -84,12 +88,25 @@ public class DbServiceImpl implements DbService, AutoCloseable {
             if (pluginId == null || pluginId.isBlank()) {
                 throw new IllegalArgumentException("pluginId is required");
             }
+            if (work == null) {
+                throw new IllegalArgumentException("work is required");
+            }
+
             try (Connection connection = dataSource.getConnection()) {
                 connection.setAutoCommit(false);
                 DbTx tx = new DbTxImpl(connection);
-                T result = work.apply(tx).join();
-                connection.commit();
-                return result;
+
+                try {
+                    T result = work.apply(tx).join();
+                    connection.commit();
+                    return result;
+                } catch (Exception exception) {
+                    try {
+                        connection.rollback();
+                    } catch (SQLException ignored) {
+                    }
+                    throw exception;
+                }
             } catch (Exception exception) {
                 throw new IllegalStateException("Transaction failed for plugin " + pluginId, exception);
             }
