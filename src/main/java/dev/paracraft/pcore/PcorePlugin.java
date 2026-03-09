@@ -32,8 +32,19 @@ public class PcorePlugin extends JavaPlugin {
             PcoreConfiguration config = PcoreConfiguration.from(getConfig());
             validate(config);
 
-            this.ioExecutor = Executors.newFixedThreadPool(Math.max(4, config.db().poolSize()));
-            this.scheduler = Executors.newSingleThreadScheduledExecutor();
+            this.ioExecutor = Executors.newFixedThreadPool(
+                    Math.max(4, config.db().poolSize()),
+                    r -> {
+                        Thread t = new Thread(r, "p-core-io");
+                        t.setDaemon(true);
+                        return t;
+                    }
+            );
+            this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "p-core-scheduler");
+                t.setDaemon(true);
+                return t;
+            });
             this.dbService = new DbServiceImpl(config.db(), ioExecutor);
             this.redisService = new RedisServiceImpl("pcore", config.redis());
 
@@ -69,10 +80,26 @@ public class PcorePlugin extends JavaPlugin {
         Bukkit.getServicesManager().unregisterAll(this);
 
         if (scheduler != null) {
-            scheduler.shutdownNow();
+            scheduler.shutdown();
+            try {
+                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    scheduler.shutdownNow();
+                }
+            } catch (InterruptedException ignored) {
+                scheduler.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
         }
         if (ioExecutor != null) {
-            ioExecutor.shutdownNow();
+            ioExecutor.shutdown();
+            try {
+                if (!ioExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                    ioExecutor.shutdownNow();
+                }
+            } catch (InterruptedException ignored) {
+                ioExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
         }
         if (dbService != null) {
             dbService.close();

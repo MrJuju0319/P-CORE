@@ -59,20 +59,30 @@ public class IdentityServiceImpl implements IdentityService {
                     return CompletableFuture.allOf(futures.values().toArray(CompletableFuture[]::new))
                             .thenApply(ignored -> futures.entrySet().stream().collect(Collectors.toMap(
                                     entry -> entry.getKey().replace("pcore:pcore:servers:", ""),
-                                    entry -> parse(entry.getKey(), entry.getValue().join())
+                                    entry -> parse(entry.getKey().replace("pcore:pcore:servers:", ""), entry.getValue().join())
                             )));
                 });
     }
 
-    private ServerInfo parse(String key, String payload) {
+    private ServerInfo parse(String serverId, String payload) {
         if (payload == null || payload.isBlank()) {
-            return new ServerInfo(key, "unknown", Set.of(), Instant.EPOCH);
+            return new ServerInfo(serverId, "unknown", Set.of(), Instant.EPOCH);
         }
+
         String[] parts = payload.split("\\|");
-        Set<String> parsedTags = parts.length > 1 && !parts[1].isBlank()
+        String group = (parts.length > 0 && !parts[0].isBlank()) ? parts[0] : "unknown";
+
+        Set<String> parsedTags = (parts.length > 1 && !parts[1].isBlank())
                 ? Set.of(parts[1].split(","))
                 : Set.of();
-        Instant lastSeen = parts.length > 2 ? Instant.ofEpochMilli(Long.parseLong(parts[2])) : Instant.now();
-        return new ServerInfo(key, parts[0], parsedTags, lastSeen);
+
+        Instant lastSeen;
+        try {
+            lastSeen = (parts.length > 2) ? Instant.ofEpochMilli(Long.parseLong(parts[2])) : Instant.now();
+        } catch (NumberFormatException ignored) {
+            lastSeen = Instant.EPOCH;
+        }
+
+        return new ServerInfo(serverId, group, parsedTags, lastSeen);
     }
 }

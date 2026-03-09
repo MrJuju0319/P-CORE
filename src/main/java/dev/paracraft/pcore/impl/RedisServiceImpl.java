@@ -10,10 +10,13 @@ import io.lettuce.core.api.async.RedisAsyncCommands;
 import io.lettuce.core.pubsub.RedisPubSubAdapter;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class RedisServiceImpl implements RedisService, AutoCloseable {
+    private static final String ROOT_PREFIX = "pcore";
+
     private final RedisClient client;
     private final StatefulRedisConnection<String, String> connection;
     private final RedisAsyncCommands<String, String> commands;
@@ -45,6 +48,10 @@ public class RedisServiceImpl implements RedisService, AutoCloseable {
 
     @Override
     public CompletableFuture<Void> set(String pluginId, String key, String value, Duration ttl) {
+        Objects.requireNonNull(ttl, "ttl");
+        if (ttl.isNegative() || ttl.isZero()) {
+            throw new IllegalArgumentException("ttl must be > 0");
+        }
         SetArgs args = SetArgs.Builder.ex(ttl);
         return commands.set(namespaced(pluginId, key), value, args)
                 .thenAccept(ignored -> {})
@@ -53,6 +60,10 @@ public class RedisServiceImpl implements RedisService, AutoCloseable {
 
     @Override
     public CompletableFuture<Long> incr(String pluginId, String key, Duration ttl) {
+        Objects.requireNonNull(ttl, "ttl");
+        if (ttl.isNegative() || ttl.isZero()) {
+            throw new IllegalArgumentException("ttl must be > 0");
+        }
         String namespacedKey = namespaced(pluginId, key);
         return commands.incr(namespacedKey)
                 .thenCompose(value -> commands.expire(namespacedKey, ttl).thenApply(expire -> value))
@@ -82,7 +93,16 @@ public class RedisServiceImpl implements RedisService, AutoCloseable {
     }
 
     private String namespaced(String pluginId, String key) {
-        return "pcore:" + pluginId + ":" + key;
+        String pid = (pluginId == null) ? "" : pluginId.trim();
+        String k = (key == null) ? "" : key.trim();
+        if (pid.isEmpty()) {
+            throw new IllegalArgumentException("pluginId is required");
+        }
+        if (k.isEmpty()) {
+            throw new IllegalArgumentException("key is required");
+        }
+        // Keep the namespace stable: pcore:<pluginId>:<key>
+        return ROOT_PREFIX + ":" + pid + ":" + k;
     }
 
     public RedisAsyncCommands<String, String> rawCommands() {

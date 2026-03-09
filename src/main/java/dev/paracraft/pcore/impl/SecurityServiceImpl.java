@@ -18,6 +18,9 @@ public class SecurityServiceImpl implements SecurityService {
     private final Map<String, Long> nonceCache = new ConcurrentHashMap<>();
     private final Duration nonceTtl = Duration.ofSeconds(60);
 
+    // Soft cap to reduce memory/DoS risk in case of abuse.
+    private static final int NONCE_CACHE_MAX = 50_000;
+
     public SecurityServiceImpl(PcoreConfiguration configuration) {
         this.configuration = configuration;
     }
@@ -35,6 +38,12 @@ public class SecurityServiceImpl implements SecurityService {
 
     @Override
     public boolean verify(String pluginId, String payload, long timestamp, String nonce, String signature) {
+        if (pluginId == null || pluginId.isBlank()) {
+            return false;
+        }
+        if (nonce == null || nonce.isBlank()) {
+            return false;
+        }
         if (!isPluginAllowed(pluginId)) {
             return false;
         }
@@ -44,13 +53,18 @@ public class SecurityServiceImpl implements SecurityService {
         }
 
         cleanupNonces(now);
+        if (nonceCache.size() > NONCE_CACHE_MAX) {
+            // Drop verification under heavy abuse rather than OOM-ing.
+            return false;
+        }
+
         String nonceKey = pluginId + ":" + nonce;
         if (nonceCache.putIfAbsent(nonceKey, now) != null) {
             return false;
         }
 
         String expected = sign(pluginId, payload, timestamp, nonce);
-        return expected.equals(signature);
+        return constantTimeEquals(expected, signature);
     }
 
     @Override
@@ -74,5 +88,24 @@ public class SecurityServiceImpl implements SecurityService {
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to create HMAC", exception);
         }
+    }
+
+    /**
+     * Prevent timing attacks on signature comparison.
+     */
+    private boolean constantTimeEquals(String a, String b) {
+        if (a == null || b == null) {
+            return false;
+        }
+        byte[] x = a.getBytes(StandardCharsets.UTF_8);
+        byte[] y = b.getBytes(StandardCharsets.UTF_8);
+        if (x.length != y.length) {
+            return false;
+        }
+        int diff = 0;
+        for (int i = 0; i < x.length; i++) {
+            diff |= x[i] ^ y[i];
+        }
+        return diff == 0;
     }
 }
