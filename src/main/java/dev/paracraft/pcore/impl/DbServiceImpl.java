@@ -59,6 +59,8 @@ public class DbServiceImpl implements DbService, AutoCloseable {
             try (Connection connection = dataSource.getConnection();
                  PreparedStatement statement = connection.prepareStatement(sql)) {
                 bind(statement, params);
+                // Prevent runaway queries from stalling the pool.
+                statement.setQueryTimeout(5);
                 return statement.executeUpdate();
             } catch (SQLException exception) {
                 throw new IllegalStateException("DB execute failed for plugin " + pluginId, exception);
@@ -73,6 +75,8 @@ public class DbServiceImpl implements DbService, AutoCloseable {
             try (Connection connection = dataSource.getConnection();
                  PreparedStatement statement = connection.prepareStatement(sql)) {
                 bind(statement, params);
+                // Prevent runaway queries from stalling the pool.
+                statement.setQueryTimeout(5);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     return toRows(resultSet);
                 }
@@ -164,6 +168,8 @@ public class DbServiceImpl implements DbService, AutoCloseable {
         public CompletableFuture<Integer> execute(String sql, List<Object> params) {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 bind(statement, params);
+                // Prevent runaway queries from stalling the pool.
+                statement.setQueryTimeout(5);
                 return CompletableFuture.completedFuture(statement.executeUpdate());
             } catch (SQLException exception) {
                 CompletableFuture<Integer> future = new CompletableFuture<>();
@@ -176,6 +182,8 @@ public class DbServiceImpl implements DbService, AutoCloseable {
         public CompletableFuture<List<Row>> query(String sql, List<Object> params) {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 bind(statement, params);
+                // Prevent runaway queries from stalling the pool.
+                statement.setQueryTimeout(5);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     return CompletableFuture.completedFuture(toRows(resultSet));
                 }
