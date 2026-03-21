@@ -8,7 +8,8 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SecurityServiceImplTest {
     private SecurityServiceImpl newService() {
@@ -18,7 +19,11 @@ class SecurityServiceImplTest {
                 new PcoreConfiguration.Db("localhost", 3306, "db", "u", "p", 10, 2,
                         Duration.ofSeconds(3), Duration.ofSeconds(60), Duration.ofSeconds(120)),
                 new PcoreConfiguration.Redis("localhost", 6379, "", false, 1000, 0),
-                Map.of("p-2FA", "p2fa"),
+                Map.of("p-2FA", "p-2FA"),
+                Map.of(
+                        "p-2FA", new PcoreConfiguration.CompatiblePlugin("p-2FA", true, "p-2FA_", "pcore:p-2FA"),
+                        "p-fly", new PcoreConfiguration.CompatiblePlugin("p-fly", false, "p-fly_", "pcore:p-fly")
+                ),
                 true,
                 Duration.ofSeconds(5),
                 Duration.ofSeconds(15)
@@ -51,7 +56,7 @@ class SecurityServiceImplTest {
     }
 
     @Test
-    void verifyShouldRejectUnknownPlugin() {
+    void verifyShouldRejectDisabledPlugin() {
         SecurityServiceImpl service = newService();
         long ts = System.currentTimeMillis();
         String signature = service.sign("p-fly", "x", ts, "nonce");
