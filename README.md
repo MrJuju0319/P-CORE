@@ -63,7 +63,7 @@ security:
 db:
   host: "127.0.0.1"
   port: 3306
-  database: "minecraft"
+  database: "p-core"
   user: "root"
   password: "password"
   poolSize: 10
@@ -80,15 +80,28 @@ redis:
   dbIndex: 0
 
 namespaces:
-  p-2FA: "p2fa"
-  p-fly: "pfly"
-  p-tp: "ptp"
-  p-voteparty: "pvoteparty"
+  p-2FA: "p-2FA"
+  p-fly: "p-fly"
+  p-tp: "p-tp"
+  p-voteparty: "p-voteparty"
 
 plugins:
   p-2FA:
-    tablePrefix: "p2fa_"
+    enabled: true
+    tablePrefix: "p-2FA_"
     cachePrefix: "pcore:p-2FA"
+  p-fly:
+    enabled: true
+    tablePrefix: "p-fly_"
+    cachePrefix: "pcore:p-fly"
+  p-tp:
+    enabled: true
+    tablePrefix: "p-tp_"
+    cachePrefix: "pcore:p-tp"
+  p-voteparty:
+    enabled: true
+    tablePrefix: "p-voteparty_"
+    cachePrefix: "pcore:p-voteparty"
 ```
 
 ### Variables principales
@@ -101,13 +114,26 @@ plugins:
 - `server.presence.ttlSeconds`: durée de vie d’un heartbeat côté Redis.
 - `security.sharedSecret`: secret HMAC (ne jamais exposer).
 - `security.allowedPlugins`: liste blanche de plugins autorisés.
-- `db.host|port|database|user|password`: credentials MariaDB.
+- `db.host|port|database|user|password`: credentials MariaDB (base par défaut: `p-core`).
 - `db.poolSize`: taille maximale du pool Hikari unique.
 - `db.minIdle`: connexions minimales conservées par le pool (évite le mode fixed-size si `< poolSize`).
 - `db.connectionTimeoutMs|idleTimeoutMs|maxLifetimeMs`: tuning pool/timeouts.
 - `redis.host|port|password|ssl|timeoutMs|dbIndex`: connexion Redis.
 - `namespaces`: mapping `pluginId -> préfixe logique`.
+- `plugins.<pluginId>.enabled`: active/désactive un plugin compatible après redémarrage.
+- `plugins.<pluginId>.tablePrefix`: préfixe SQL imposé pour les tables du plugin (ex: `p-fly_`).
+- `plugins.<pluginId>.cachePrefix`: préfixe Redis du plugin.
 - `plugins.<pluginId>.*`: options custom accessibles via `ConfigService`.
+
+
+### Plugins compatibles auto-déclarés
+
+Au démarrage, `p-core` ajoute automatiquement les plugins compatibles connus dans `plugins:` s’ils sont absents du fichier de config.
+
+- Chaque plugin reçoit un flag `enabled: true|false`.
+- Le changement est pris en compte **après un restart** du serveur.
+- Les préfixes SQL suivent maintenant le format demandé (`p-fly_`, `p-voteparty_`, etc.).
+- Si un plugin est désactivé (`enabled: false`), il n’est plus considéré comme autorisé par `SecurityService`.
 
 ### Conseils de configuration
 
@@ -199,7 +225,7 @@ String pluginId = "p-fly";
 
 api.db().execute(
     pluginId,
-    "UPDATE pfly_players SET fly_enabled = ? WHERE uuid = ?",
+    "UPDATE p-fly_players SET fly_enabled = ? WHERE uuid = ?",
     java.util.List.of(true, playerUuid.toString())
 ).thenAccept(rows -> {
     // succès
@@ -210,7 +236,7 @@ api.db().execute(
 
 api.db().query(
     pluginId,
-    "SELECT fly_enabled FROM pfly_players WHERE uuid = ?",
+    "SELECT fly_enabled FROM p-fly_players WHERE uuid = ?",
     java.util.List.of(playerUuid.toString())
 ).thenAccept(rows -> {
     if (!rows.isEmpty()) {
