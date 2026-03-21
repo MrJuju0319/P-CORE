@@ -55,6 +55,10 @@ public class SecurityServiceImpl implements SecurityService {
 
     @Override
     public boolean isPluginAllowed(String pluginId) {
+        PcoreConfiguration.CompatiblePlugin compatiblePlugin = configuration.compatiblePlugins().get(pluginId);
+        if (compatiblePlugin != null) {
+            return compatiblePlugin.enabled();
+        }
         if (configuration.security().allowedPlugins().isEmpty()) {
             return true;
         }
