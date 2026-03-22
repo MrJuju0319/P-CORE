@@ -27,7 +27,10 @@ redis:
   port: 6379
   password: ""
   ssl: false
-  timeoutMs: 1000
+  connectTimeoutMs: 5000
+  commandTimeoutMs: 5000
+  autoReconnect: true
+  pingBeforeActivateConnection: true
   dbIndex: 0
 
 namespaces:

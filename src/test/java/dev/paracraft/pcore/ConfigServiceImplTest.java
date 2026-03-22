@@ -26,7 +26,7 @@ class ConfigServiceImplTest {
                 new PcoreConfiguration.Security("secret", Set.of()),
                 new PcoreConfiguration.Db("localhost", 3306, "db", "u", "p", 10, 2,
                         Duration.ofSeconds(3), Duration.ofSeconds(60), Duration.ofSeconds(120)),
-                new PcoreConfiguration.Redis("localhost", 6379, "", false, 1000, 0),
+                new PcoreConfiguration.Redis("localhost", 6379, "", false, Duration.ofSeconds(5), Duration.ofSeconds(5), true, true, 0),
                 Map.of("p-2FA", "p-2FA"),
                 Map.of(
                         "p-2FA", new PcoreConfiguration.CompatiblePlugin("p-2FA", true, "p-2FA_", "pcore:p-2FA"),

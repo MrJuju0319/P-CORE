@@ -51,12 +51,16 @@ public record PcoreConfiguration(
                 Duration.ofMillis(cfg.getLong("db.maxLifetimeMs", 1800000))
         );
 
+        long legacyRedisTimeoutMs = cfg.getLong("redis.timeoutMs", 5000);
         Redis redis = new Redis(
                 cfg.getString("redis.host", "127.0.0.1"),
                 cfg.getInt("redis.port", 6379),
                 cfg.getString("redis.password", ""),
                 cfg.getBoolean("redis.ssl", false),
-                cfg.getLong("redis.timeoutMs", 1000),
+                Duration.ofMillis(cfg.getLong("redis.connectTimeoutMs", legacyRedisTimeoutMs)),
+                Duration.ofMillis(cfg.getLong("redis.commandTimeoutMs", legacyRedisTimeoutMs)),
+                cfg.getBoolean("redis.autoReconnect", true),
+                cfg.getBoolean("redis.pingBeforeActivateConnection", true),
                 cfg.getInt("redis.dbIndex", 0)
         );
 
@@ -126,7 +130,10 @@ public record PcoreConfiguration(
                      int poolSize, int minIdle, Duration connectionTimeout, Duration idleTimeout, Duration maxLifetime) {
     }
 
-    public record Redis(String host, int port, String password, boolean ssl, long timeoutMs, int dbIndex) {
+    public record Redis(String host, int port, String password, boolean ssl,
+                        Duration connectTimeout, Duration commandTimeout,
+                        boolean autoReconnect, boolean pingBeforeActivateConnection,
+                        int dbIndex) {
     }
 
     public record CompatiblePlugin(String pluginId, boolean enabled, String tablePrefix, String cachePrefix) {

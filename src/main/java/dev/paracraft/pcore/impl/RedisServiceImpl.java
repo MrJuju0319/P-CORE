@@ -1,13 +1,17 @@
 package dev.paracraft.pcore.impl;
 
 import dev.paracraft.pcore.api.RedisService;
+import dev.paracraft.pcore.config.PcoreConfiguration;
+import io.lettuce.core.ClientOptions;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.SetArgs;
+import io.lettuce.core.SocketOptions;
+import io.lettuce.core.TimeoutOptions;
 import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 import io.lettuce.core.api.async.RedisAsyncCommands;
 import io.lettuce.core.pubsub.RedisPubSubAdapter;
+import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -19,12 +23,12 @@ public class RedisServiceImpl implements RedisService, AutoCloseable {
     private final RedisAsyncCommands<String, String> commands;
     private final StatefulRedisPubSubConnection<String, String> pubSubConnection;
 
-    public RedisServiceImpl(String namespace, dev.paracraft.pcore.config.PcoreConfiguration.Redis redis) {
+    public RedisServiceImpl(String namespace, PcoreConfiguration.Redis redis) {
         RedisURI.Builder builder = RedisURI.builder()
                 .withHost(redis.host())
                 .withPort(redis.port())
                 .withDatabase(redis.dbIndex())
-                .withTimeout(Duration.ofMillis(redis.timeoutMs()));
+                .withTimeout(redis.commandTimeout());
         if (!redis.password().isBlank()) {
             builder.withPassword(redis.password().toCharArray());
         }
@@ -32,7 +36,18 @@ public class RedisServiceImpl implements RedisService, AutoCloseable {
             builder.withSsl(true);
         }
         RedisURI uri = builder.build();
+
         this.client = RedisClient.create(uri);
+        client.setOptions(ClientOptions.builder()
+                .autoReconnect(redis.autoReconnect())
+                .pingBeforeActivateConnection(redis.pingBeforeActivateConnection())
+                .socketOptions(SocketOptions.builder()
+                        .connectTimeout(redis.connectTimeout())
+                        .keepAlive(true)
+                        .build())
+                .timeoutOptions(TimeoutOptions.enabled(redis.commandTimeout()))
+                .build());
+
         this.connection = client.connect();
         this.pubSubConnection = client.connectPubSub();
         this.commands = connection.async();

@@ -76,7 +76,10 @@ redis:
   port: 6379
   password: ""
   ssl: false
-  timeoutMs: 1000
+  connectTimeoutMs: 5000
+  commandTimeoutMs: 5000
+  autoReconnect: true
+  pingBeforeActivateConnection: true
   dbIndex: 0
 
 namespaces:
@@ -118,7 +121,9 @@ plugins:
 - `db.poolSize`: taille maximale du pool Hikari unique.
 - `db.minIdle`: connexions minimales conservées par le pool (évite le mode fixed-size si `< poolSize`).
 - `db.connectionTimeoutMs|idleTimeoutMs|maxLifetimeMs`: tuning pool/timeouts.
-- `redis.host|port|password|ssl|timeoutMs|dbIndex`: connexion Redis.
+- `redis.host|port|password|ssl|connectTimeoutMs|commandTimeoutMs|dbIndex`: connexion Redis.
+- `redis.autoReconnect`: réouvre automatiquement la connexion Redis après une coupure réseau.
+- `redis.pingBeforeActivateConnection`: valide la connexion avant réutilisation pour éviter des sockets mortes.
 - `namespaces`: mapping `pluginId -> préfixe logique`.
 - `plugins.<pluginId>.enabled`: active/désactive un plugin compatible après redémarrage.
 - `plugins.<pluginId>.tablePrefix`: préfixe SQL imposé pour les tables du plugin (ex: `p-fly_`).
@@ -134,6 +139,15 @@ Au démarrage, `p-core` ajoute automatiquement les plugins compatibles connus da
 - Le changement est pris en compte **après un restart** du serveur.
 - Les préfixes SQL suivent maintenant le format demandé (`p-fly_`, `p-voteparty_`, etc.).
 - Si un plugin est désactivé (`enabled: false`), il n’est plus considéré comme autorisé par `SecurityService`.
+
+### Réduction des timeouts Redis
+
+Pour limiter les erreurs du type `SocketTimeoutException: Read timed out` côté Redis:
+
+- augmentez `redis.commandTimeoutMs` si votre Redis répond lentement ;
+- laissez `redis.autoReconnect: true` pour permettre la reconnexion automatique ;
+- gardez `redis.pingBeforeActivateConnection: true` pour éviter de réutiliser une connexion expirée ;
+- si un autre plugin utilise **Jedis** (comme dans votre stacktrace), alignez aussi son timeout interne avec les valeurs Redis de `p-core`.
 
 ### Conseils de configuration
 
