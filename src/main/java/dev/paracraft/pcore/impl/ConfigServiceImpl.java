@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public class ConfigServiceImpl implements ConfigService {
     private final FileConfiguration fileConfiguration;
@@ -41,5 +42,39 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public String namespacePrefix(String pluginId) {
         return configuration.namespaces().getOrDefault(pluginId, pluginId);
+    }
+
+    @Override
+    public String tablePrefix(String pluginId) {
+        return configuration.compatiblePlugins()
+                .getOrDefault(pluginId, new PcoreConfiguration.CompatiblePlugin(
+                        pluginId,
+                        false,
+                        PcoreConfiguration.defaultTablePrefix(pluginId),
+                        "pcore:" + pluginId
+                ))
+                .tablePrefix();
+    }
+
+    @Override
+    public boolean isPluginEnabled(String pluginId) {
+        return configuration.compatiblePlugins()
+                .getOrDefault(pluginId, new PcoreConfiguration.CompatiblePlugin(
+                        pluginId,
+                        false,
+                        PcoreConfiguration.defaultTablePrefix(pluginId),
+                        "pcore:" + pluginId
+                ))
+                .enabled();
+    }
+
+    @Override
+    public Set<String> compatiblePlugins() {
+        return configuration.compatiblePlugins().keySet();
+    }
+
+    @Override
+    public Map<String, PcoreConfiguration.CompatiblePlugin> compatiblePluginConfigs() {
+        return Collections.unmodifiableMap(configuration.compatiblePlugins());
     }
 }

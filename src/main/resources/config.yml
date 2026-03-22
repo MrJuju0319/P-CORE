@@ -13,7 +13,7 @@ security:
 db:
   host: "127.0.0.1"
   port: 3306
-  database: "minecraft"
+  database: "p-core"
   user: "root"
   password: "password"
   poolSize: 10
@@ -27,19 +27,32 @@ redis:
   port: 6379
   password: ""
   ssl: false
-  timeoutMs: 1000
+  connectTimeoutMs: 5000
+  commandTimeoutMs: 5000
+  autoReconnect: true
+  pingBeforeActivateConnection: true
   dbIndex: 0
 
 namespaces:
-  p-2FA: "p2fa"
-  p-fly: "pfly"
-  p-tp: "ptp"
-  p-voteparty: "pvoteparty"
+  p-2FA: "p-2FA"
+  p-fly: "p-fly"
+  p-tp: "p-tp"
+  p-voteparty: "p-voteparty"
 
 plugins:
   p-2FA:
-    tablePrefix: "p2fa_"
+    enabled: true
+    tablePrefix: "p-2FA_"
     cachePrefix: "pcore:p-2FA"
   p-fly:
-    tablePrefix: "pfly_"
+    enabled: true
+    tablePrefix: "p-fly_"
     cachePrefix: "pcore:p-fly"
+  p-tp:
+    enabled: true
+    tablePrefix: "p-tp_"
+    cachePrefix: "pcore:p-tp"
+  p-voteparty:
+    enabled: true
+    tablePrefix: "p-voteparty_"
+    cachePrefix: "pcore:p-voteparty"
